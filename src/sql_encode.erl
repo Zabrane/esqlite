@@ -90,10 +90,10 @@ quote(Bin, latin1) when is_binary(Bin) ->
     list_to_binary(quote(binary_to_list(Bin)));
 quote(Bin, Encoding) when is_binary(Bin) ->
     case unicode:characters_to_list(Bin,Encoding) of
-	{error,E1,E2} -> 
+	{error,_E1,_E2} -> 
 	    %%exit({invalid_encoding_binary, E1, E2});
         list_to_binary(quote(binary_to_list(Bin)));
-    {incomplete,E1,E2} ->
+    {incomplete,_E1,_E2} ->
 	    %%exit({invalid_encoding_binary, E1, E2});
         list_to_binary(quote(binary_to_list(Bin)));
 	List ->
