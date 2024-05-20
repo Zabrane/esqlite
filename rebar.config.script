@@ -50,6 +50,10 @@ CFlags =
         {"priv/esqlite3_nif.so", NifSources}
     ]},
 
+    %% Plugins
+    {project_plugins, [
+      {pc, {git, "https://github.com/blt/port_compiler.git", {tag, "otp-27"}}}
+    ]},
     {plugins, [pc]},
 
     {provider_hooks,
