@@ -52,7 +52,7 @@ CFlags =
 
     %% Plugins
     {project_plugins, [
-      {pc, {git, "https://github.com/blt/port_compiler.git", {tag, "otp-27"}}}
+      {pc, {git, "https://github.com/blt/port_compiler.git", {branch,"master"}}}
     ]},
     {plugins, [pc]},
 
