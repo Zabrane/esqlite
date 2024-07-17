@@ -130,6 +130,7 @@ destruct_esqlite3_backup(ErlNifEnv *env, void *arg)
     }
 }
 
+/*
 static ERL_NIF_TERM
 make_binary(ErlNifEnv *env, const void *bytes, unsigned int size)
 {
@@ -144,6 +145,22 @@ make_binary(ErlNifEnv *env, const void *bytes, unsigned int size)
     term = enif_make_binary(env, &blob);
     enif_release_binary(&blob);
 
+    return term;
+}
+*/
+
+#if defined(__GNUC__)
+#define LIKELY(x)   __builtin_expect(!!(x), 1)
+#define UNLIKELY(x) __builtin_expect(!!(x), 0)
+#endif
+
+static ERL_NIF_TERM
+make_binary(ErlNifEnv *env, const void *bytes, unsigned int size)
+{
+    ERL_NIF_TERM term;
+    unsigned char *field = enif_make_new_binary(env, size, &term);
+    if (UNLIKELY(!field)) return make_atom(env, "error");
+    memcpy(field, bytes, size);
     return term;
 }
 
