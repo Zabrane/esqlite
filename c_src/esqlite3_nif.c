@@ -31,6 +31,32 @@ static ErlNifResourceType *esqlite3_type = NULL;
 static ErlNifResourceType *esqlite3_stmt_type = NULL;
 static ErlNifResourceType *esqlite3_backup_type = NULL;
 
+#define DECL_ATOM(name)      static ERL_NIF_TERM atom_##name = 0
+#define LOAD_ATOM(ctx, name) atom_##name = enif_make_atom(ctx, #name)
+
+DECL_ATOM(true);
+DECL_ATOM(false);
+DECL_ATOM(ok);
+DECL_ATOM(error);
+DECL_ATOM(closed);
+DECL_ATOM(delete);
+DECL_ATOM(errcode);
+DECL_ATOM(errmsg);
+DECL_ATOM(error_offset);
+DECL_ATOM(errstr);
+DECL_ATOM(extended_errcode);
+DECL_ATOM(highwater);
+DECL_ATOM(insert);
+DECL_ATOM(internal_error);
+DECL_ATOM(invalid_column_count);
+DECL_ATOM(no_memory);
+DECL_ATOM(no_prepared_statement);
+DECL_ATOM(not_thread_safe);
+DECL_ATOM(sqlite3_malloc_failure);
+DECL_ATOM(undefined);
+DECL_ATOM(update);
+DECL_ATOM(used);
+
 /* Database connection context */
 typedef struct {
     sqlite3 *db;
@@ -69,18 +95,18 @@ make_atom(ErlNifEnv *env, const char *atom_name)
 static ERL_NIF_TERM
 make_ok_tuple(ErlNifEnv *env, ERL_NIF_TERM value)
 {
-    return enif_make_tuple2(env, make_atom(env, "ok"), value);
+    return enif_make_tuple2(env, atom_ok, value);
 }
 
 static ERL_NIF_TERM
 make_error_tuple(ErlNifEnv *env, const char *reason)
 {
-    return enif_make_tuple2(env, make_atom(env, "error"), make_atom(env, reason));
+    return enif_make_tuple2(env, atom_error, make_atom(env, reason));
 }
 
 static ERL_NIF_TERM
 make_sqlite3_error_tuple(ErlNifEnv *env, int error_code) {
-    return enif_make_tuple2(env, make_atom(env, "error"), enif_make_int(env, error_code));
+    return enif_make_tuple2(env, atom_error, enif_make_int(env, error_code));
 }
 
 /*
@@ -138,7 +164,7 @@ make_binary(ErlNifEnv *env, const void *bytes, unsigned int size)
     ERL_NIF_TERM term;
 
     if(!enif_alloc_binary(size, &blob)) {
-        return make_atom(env, "error");
+        return atom_error;
     }
 
     memcpy(blob.data, bytes, size);
@@ -159,7 +185,7 @@ make_binary(ErlNifEnv *env, const void *bytes, unsigned int size)
 {
     ERL_NIF_TERM term;
     unsigned char *field = enif_make_new_binary(env, size, &term);
-    if (UNLIKELY(!field)) return make_atom(env, "error");
+    if (UNLIKELY(!field)) return atom_error;
     memcpy(field, bytes, size);
     return term;
 }
@@ -171,7 +197,7 @@ make_cell(ErlNifEnv *env, sqlite3_stmt *statement, unsigned int i)
 
     switch(type) {
         case SQLITE_NULL:
-            return make_atom(env, "undefined");
+            return atom_undefined;
         case SQLITE_INTEGER:
             return enif_make_int64(env, sqlite3_column_int64(statement, i));
         case SQLITE_FLOAT:
@@ -184,7 +210,7 @@ make_cell(ErlNifEnv *env, sqlite3_stmt *statement, unsigned int i)
                     sqlite3_column_bytes(statement, i));
     }
 
-    return enif_raise_exception(env, make_atom(env, "internal_error"));
+    return enif_raise_exception(env, atom_internal_error);
 }
 
 /*
@@ -201,7 +227,7 @@ esqlite_open(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
     }
 
     if(!sqlite3_threadsafe()) {
-        return enif_raise_exception(env, make_atom(env, "not_thread_safe"));
+        return enif_raise_exception(env, atom_not_thread_safe);
     }
 
     int size = enif_get_string(env, argv[0], filename, MAX_PATHNAME, ERL_NIF_LATIN1);
@@ -212,7 +238,7 @@ esqlite_open(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
     /* Initialize the resource */
     conn = enif_alloc_resource(esqlite3_type, sizeof(esqlite3));
     if(!conn) {
-        return enif_raise_exception(env, make_atom(env, "no_memory"));   
+        return enif_raise_exception(env, atom_no_memory);   
     }
 
      /* Open the database.
@@ -255,7 +281,7 @@ esqlite_close(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
     }
 
     if(conn->db == NULL) {
-        return make_atom(env, "ok");
+        return atom_ok;
     }
 
     /* 
@@ -276,7 +302,7 @@ esqlite_close(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
     }
 
     conn->db = NULL;
-    return make_atom(env, "ok");
+    return atom_ok;
 }
 
 /*
@@ -305,11 +331,11 @@ esqlite_error_info(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
     const char *errmsg = sqlite3_errmsg(conn->db);
 
     ERL_NIF_TERM info = enif_make_new_map(env);
-    enif_make_map_put(env, info, make_atom(env, "errcode"), enif_make_int(env, code), &info);
-    enif_make_map_put(env, info, make_atom(env, "extended_errcode"), enif_make_int(env, extended_code), &info);
-    enif_make_map_put(env, info, make_atom(env, "errstr"), make_binary(env, errstr, strlen(errstr)), &info);
-    enif_make_map_put(env, info, make_atom(env, "errmsg"), make_binary(env, errmsg, strlen(errmsg)), &info);
-    enif_make_map_put(env, info, make_atom(env, "error_offset"), enif_make_int(env, sqlite3_error_offset(conn->db)), &info);
+    enif_make_map_put(env, info, atom_errcode, enif_make_int(env, code), &info);
+    enif_make_map_put(env, info, atom_extended_errcode, enif_make_int(env, extended_code), &info);
+    enif_make_map_put(env, info, atom_errstr, make_binary(env, errstr, strlen(errstr)), &info);
+    enif_make_map_put(env, info, atom_errmsg, make_binary(env, errmsg, strlen(errmsg)), &info);
+    enif_make_map_put(env, info, atom_error_offset, enif_make_int(env, sqlite3_error_offset(conn->db)), &info);
 
     return info;
 }
@@ -330,13 +356,13 @@ update_callback(void *arg, int sqlite_operation_type, char const *sqlite_databas
 
     switch(sqlite_operation_type) {
         case SQLITE_INSERT:
-            type = make_atom(msg_env, "insert");
+            type = atom_insert;
             break;
         case SQLITE_DELETE:
-            type = make_atom(msg_env, "delete");
+            type = atom_delete;
             break;
         case SQLITE_UPDATE:
-            type = make_atom(msg_env, "update");
+            type = atom_update;
             break;
         default:
             return;
@@ -369,7 +395,7 @@ esqlite_set_update_hook(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
     }
 
     if(!conn->db) {
-        return enif_raise_exception(env, make_atom(env, "closed"));
+        return enif_raise_exception(env, atom_closed);
     }
 
     if(enif_is_atom(env, argv[1])) {
@@ -383,7 +409,7 @@ esqlite_set_update_hook(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
         sqlite3_update_hook(conn->db, update_callback, conn);
     }
 
-    return make_atom(env, "ok");
+    return atom_ok;
 }
 
 
@@ -415,7 +441,7 @@ esqlite_exec(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
         return make_sqlite3_error_tuple(env, rc);
     }
 
-    return make_atom(env, "ok");
+    return atom_ok;
 }
 
 
@@ -453,7 +479,7 @@ esqlite_prepare(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
 
     stmt = enif_alloc_resource(esqlite3_stmt_type, sizeof(esqlite3_stmt));
     if(!stmt) {
-        return enif_raise_exception(env, make_atom(env, "no_memory"));   
+        return enif_raise_exception(env, atom_no_memory);   
     }
     /* Keep a reference to the connection to prevent it from being garbage collected
      * before the statement.
@@ -492,20 +518,20 @@ esqlite_column_names(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
     }
 
     if(!stmt->statement) {
-        return enif_raise_exception(env, make_atom(env, "no_prepared_statement"));   
+        return enif_raise_exception(env, atom_no_prepared_statement);   
     }
 
     ERL_NIF_TERM column_names = enif_make_list(env, 0);
 
     int size = sqlite3_column_count(stmt->statement);
     if(size < 0) {
-        return enif_raise_exception(env, make_atom(env, "invalid_column_count"));   
+        return enif_raise_exception(env, atom_invalid_column_count);   
     }
 
     for(int i=size; i-- > 0; ) {
         const char *name = sqlite3_column_name(stmt->statement, i);
         if(name == NULL) {
-            return enif_raise_exception(env, make_atom(env, "sqlite3_malloc_failure"));   
+            return enif_raise_exception(env, atom_sqlite3_malloc_failure);   
         }
 
         ERL_NIF_TERM ename = make_binary(env, name, strlen(name));
@@ -532,14 +558,14 @@ esqlite_column_decltypes(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
     }
 
     if(!stmt->statement) {
-        return enif_raise_exception(env, make_atom(env, "no_prepared_statement"));   
+        return enif_raise_exception(env, atom_no_prepared_statement);   
     }
 
     ERL_NIF_TERM column_types = enif_make_list(env, 0);
 
     int size = sqlite3_column_count(stmt->statement);
     if(size < 0) {
-        return enif_raise_exception(env, make_atom(env, "invalid_column_count"));   
+        return enif_raise_exception(env, atom_invalid_column_count);   
     }
 
     for(int i=size; i-- > 0; ) {
@@ -548,7 +574,7 @@ esqlite_column_decltypes(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
         const char *type = sqlite3_column_decltype(stmt->statement, i);
 
         if(type == NULL) {
-            type_name = make_atom(env, "undefined");
+            type_name = atom_undefined;
         } else {
             type_name = make_binary(env, type, strlen(type));
         }
@@ -575,7 +601,7 @@ esqlite_bind_int(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
     }
 
     if(!stmt->statement) {
-        return enif_raise_exception(env, make_atom(env, "no_prepared_statement"));   
+        return enif_raise_exception(env, atom_no_prepared_statement);   
     }
 
     if(!enif_get_int(env, argv[1], &index)) {
@@ -591,7 +617,7 @@ esqlite_bind_int(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
         return make_sqlite3_error_tuple(env, rc);
     }
 
-    return make_atom(env, "ok");
+    return atom_ok;
 }
 
 static ERL_NIF_TERM
@@ -610,7 +636,7 @@ esqlite_bind_int64(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
     }
 
     if(!stmt->statement) {
-        return enif_raise_exception(env, make_atom(env, "no_prepared_statement"));   
+        return enif_raise_exception(env, atom_no_prepared_statement);   
     }
 
     if(!enif_get_int(env, argv[1], &index)) {
@@ -626,7 +652,7 @@ esqlite_bind_int64(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
         return make_sqlite3_error_tuple(env, rc);
     }
 
-    return make_atom(env, "ok");
+    return atom_ok;
 }
 
 static ERL_NIF_TERM
@@ -645,7 +671,7 @@ esqlite_bind_double(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
     }
 
     if(!stmt->statement) {
-        return enif_raise_exception(env, make_atom(env, "no_prepared_statement"));   
+        return enif_raise_exception(env, atom_no_prepared_statement);   
     }
 
     if(!enif_get_int(env, argv[1], &index)) {
@@ -661,7 +687,7 @@ esqlite_bind_double(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
         return make_sqlite3_error_tuple(env, rc);
     }
 
-    return make_atom(env, "ok");
+    return atom_ok;
 }
 
 static ERL_NIF_TERM
@@ -680,7 +706,7 @@ esqlite_bind_text(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
     }
 
     if(!stmt->statement) {
-        return enif_raise_exception(env, make_atom(env, "no_prepared_statement"));   
+        return enif_raise_exception(env, atom_no_prepared_statement);   
     }
 
     if(!enif_get_int(env, argv[1], &index)) {
@@ -702,7 +728,7 @@ esqlite_bind_text(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
         return make_sqlite3_error_tuple(env, rc);
     }
 
-    return make_atom(env, "ok");
+    return atom_ok;
 }
 
 static ERL_NIF_TERM
@@ -721,7 +747,7 @@ esqlite_bind_blob(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
     }
 
     if(!stmt->statement) {
-        return enif_raise_exception(env, make_atom(env, "no_prepared_statement"));   
+        return enif_raise_exception(env, atom_no_prepared_statement);   
     }
 
     if(!enif_get_int(env, argv[1], &index)) {
@@ -737,7 +763,7 @@ esqlite_bind_blob(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
         return make_sqlite3_error_tuple(env, rc);
     }
 
-    return make_atom(env, "ok");
+    return atom_ok;
 }
 
 static ERL_NIF_TERM
@@ -755,7 +781,7 @@ esqlite_bind_null(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
     }
 
     if(!stmt->statement) {
-        return enif_raise_exception(env, make_atom(env, "no_prepared_statement"));   
+        return enif_raise_exception(env, atom_no_prepared_statement);   
     }
 
     if(!enif_get_int(env, argv[1], &index)) {
@@ -767,7 +793,7 @@ esqlite_bind_null(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
         return make_sqlite3_error_tuple(env, rc);
     }
 
-    return make_atom(env, "ok");
+    return atom_ok;
 }
 
 static ERL_NIF_TERM
@@ -787,7 +813,7 @@ esqlite_bind_parameter_index(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]
     }
 
     if(!stmt->statement) {
-        return enif_raise_exception(env, make_atom(env, "no_prepared_statement"));   
+        return enif_raise_exception(env, atom_no_prepared_statement);   
     }
 
     if(!enif_inspect_iolist_as_binary(env, enif_make_list2(env, argv[1], eos), &bin)) {
@@ -796,7 +822,7 @@ esqlite_bind_parameter_index(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]
 
     index = sqlite3_bind_parameter_index(stmt->statement, bin.data);
     if(index == 0) {
-        return enif_make_atom(env, "error");
+        return atom_error;
     }
 
     return make_ok_tuple(env, enif_make_int(env, index));
@@ -816,7 +842,7 @@ esqlite_step(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
     }
 
     if(!stmt->statement) {
-        return enif_raise_exception(env, make_atom(env, "no_prepared_statement"));   
+        return enif_raise_exception(env, atom_no_prepared_statement);   
     }
 
     int rc = sqlite3_step(stmt->statement);
@@ -859,14 +885,14 @@ esqlite_reset(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
     }
 
     if(!stmt->statement) {
-        return enif_raise_exception(env, make_atom(env, "no_prepared_statement"));   
+        return enif_raise_exception(env, atom_no_prepared_statement);   
     }
 
     int rc = sqlite3_reset(stmt->statement);
     if(rc != SQLITE_OK) {
         return make_sqlite3_error_tuple(env, rc);
     }
-    return make_atom(env, "ok");
+    return atom_ok;
 }
 
 
@@ -912,7 +938,7 @@ esqlite_backup_init(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
     esqlite3_backup *ebackup = enif_alloc_resource(esqlite3_backup_type, sizeof(esqlite3_backup));
     if(!ebackup) {
         (void) sqlite3_backup_finish(backup);
-        return enif_raise_exception(env, make_atom(env, "no_memory"));   
+        return enif_raise_exception(env, atom_no_memory);   
     }
 
     ebackup->backup = backup;
@@ -1001,7 +1027,7 @@ esqlite_backup_step(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
         return make_sqlite3_error_tuple(env, rc);
     }
 
-    return make_atom(env, "ok");
+    return atom_ok;
 }
 
 /*
@@ -1040,7 +1066,7 @@ esqlite_backup_finish(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
         return make_sqlite3_error_tuple(env, rc);
     }
 
-    return make_atom(env, "ok");
+    return atom_ok;
 }
 
 /*
@@ -1059,11 +1085,11 @@ esqlite_interrupt(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
 
     esqlite3 *db = (esqlite3 *) conn;
     if(db->db == NULL) {
-        return enif_raise_exception(env, make_atom(env, "closed"));
+        return enif_raise_exception(env, atom_closed);
     }
 
     sqlite3_interrupt(db->db);
-    return enif_make_atom(env, "ok");
+    return atom_ok;
 }
 
 static ERL_NIF_TERM
@@ -1080,14 +1106,14 @@ esqlite_get_autocommit(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
     esqlite3 *db = (esqlite3 *) conn;
 
     if(db->db == NULL) {
-        return enif_raise_exception(env, make_atom(env, "closed"));
+        return enif_raise_exception(env, atom_closed);
     }
 
     if(sqlite3_get_autocommit(db->db)) {
-        return make_atom(env, "true");
+        return atom_true;
     } 
 
-    return make_atom(env, "false");
+    return atom_false;
 }
 
 static ERL_NIF_TERM
@@ -1104,7 +1130,7 @@ esqlite_last_insert_rowid(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
     esqlite3 *db = (esqlite3 *) conn;
 
     if(db->db == NULL) {
-        return enif_raise_exception(env, make_atom(env, "closed"));
+        return enif_raise_exception(env, atom_closed);
     }
 
     sqlite3_int64 last_rowid = sqlite3_last_insert_rowid(db->db);
@@ -1125,7 +1151,7 @@ esqlite_changes(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
     esqlite3 *db = (esqlite3 *) conn;
 
     if(db->db == NULL) {
-        return enif_raise_exception(env, make_atom(env, "closed"));
+        return enif_raise_exception(env, atom_closed);
     }
 
     sqlite3_int64 changes = sqlite3_changes64(db->db);
@@ -1148,8 +1174,8 @@ esqlite_memory_stats(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
     int highwater = sqlite3_memory_highwater(highwater_reset_flag);
 
     ERL_NIF_TERM stats = enif_make_new_map(env);
-    enif_make_map_put(env, stats, make_atom(env, "used"), enif_make_int64(env, used), &stats);
-    enif_make_map_put(env, stats, make_atom(env, "highwater"), enif_make_int64(env, highwater), &stats);
+    enif_make_map_put(env, stats, atom_used, enif_make_int64(env, used), &stats);
+    enif_make_map_put(env, stats, atom_highwater, enif_make_int64(env, highwater), &stats);
     
     return stats;
 }
@@ -1180,8 +1206,8 @@ esqlite_status(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
     }
 
     ERL_NIF_TERM stats = enif_make_new_map(env);
-    enif_make_map_put(env, stats, make_atom(env, "used"), enif_make_int64(env, used), &stats);
-    enif_make_map_put(env, stats, make_atom(env, "highwater"), enif_make_int64(env, highwater), &stats);
+    enif_make_map_put(env, stats, atom_used, enif_make_int64(env, used), &stats);
+    enif_make_map_put(env, stats, atom_highwater, enif_make_int64(env, highwater), &stats);
     
     return stats;
 }
@@ -1213,6 +1239,28 @@ on_load(ErlNifEnv* env, void** priv, ERL_NIF_TERM info)
         return -1;
     }
 
+    LOAD_ATOM(env, true);
+    LOAD_ATOM(env, false);
+    LOAD_ATOM(env, ok);
+    LOAD_ATOM(env, error);
+	LOAD_ATOM(env, closed);
+	LOAD_ATOM(env, delete);
+	LOAD_ATOM(env, errcode);
+	LOAD_ATOM(env, errmsg);
+	LOAD_ATOM(env, error_offset);
+	LOAD_ATOM(env, errstr);
+	LOAD_ATOM(env, extended_errcode);
+	LOAD_ATOM(env, highwater);
+	LOAD_ATOM(env, insert);
+	LOAD_ATOM(env, internal_error);
+	LOAD_ATOM(env, invalid_column_count);
+	LOAD_ATOM(env, no_memory);
+	LOAD_ATOM(env, no_prepared_statement);
+	LOAD_ATOM(env, not_thread_safe);
+	LOAD_ATOM(env, sqlite3_malloc_failure);
+	LOAD_ATOM(env, undefined);
+	LOAD_ATOM(env, update);
+	LOAD_ATOM(env, used);
     return 0;
 }
 
