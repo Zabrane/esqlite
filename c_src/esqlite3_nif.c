@@ -723,7 +723,9 @@ esqlite_bind_text(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
      * 
      */
 
-    int rc = sqlite3_bind_text64(stmt->statement, index, (char *) text.data, text.size, SQLITE_TRANSIENT, SQLITE_UTF8);
+    // Use static buffers:
+    // https://stackoverflow.com/a/25896103
+    int rc = sqlite3_bind_text64(stmt->statement, index, (char *) text.data, text.size, SQLITE_STATIC, SQLITE_UTF8);
     if(rc != SQLITE_OK) {
         return make_sqlite3_error_tuple(env, rc);
     }
