@@ -58,6 +58,7 @@
     backup_finish/1,
 
     bind0/2,
+    bind1/3,
     bind/2,
 
     q/2, q/3,
