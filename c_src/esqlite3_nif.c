@@ -424,10 +424,6 @@ esqlite_exec(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
     int rc;
     ERL_NIF_TERM eos = enif_make_int(env, 0);
 
-    if(argc != 2) {
-        return enif_make_badarg(env);
-    }
-
     if(!enif_get_resource(env, argv[0], esqlite3_type, (void **) &conn)) {
         return enif_make_badarg(env);
     }
@@ -452,10 +448,6 @@ static ERL_NIF_TERM
 esqlite_prepare(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
 {
     esqlite3 *conn;
-
-    if(argc != 3) {
-        return enif_make_badarg(env);
-    }
 
     if(!enif_get_resource(env, argv[0], esqlite3_type, (void **) &conn)) {
         return enif_make_badarg(env);
@@ -509,16 +501,8 @@ esqlite_column_names(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
 {
     esqlite3_stmt *stmt;
 
-    if(argc != 1) {
-        return enif_make_badarg(env);
-    }
-
     if(!enif_get_resource(env, argv[0], esqlite3_stmt_type, (void **) &stmt)) {
         return enif_make_badarg(env);
-    }
-
-    if(!stmt->statement) {
-        return enif_raise_exception(env, atom_no_prepared_statement);   
     }
 
     ERL_NIF_TERM column_names = enif_make_list(env, 0);
@@ -549,16 +533,8 @@ esqlite_column_decltypes(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
 {
     esqlite3_stmt *stmt;
 
-    if(argc != 1) {
-        return enif_make_badarg(env);
-    }
-
     if(!enif_get_resource(env, argv[0], esqlite3_stmt_type, (void **) &stmt)) {
         return enif_make_badarg(env);
-    }
-
-    if(!stmt->statement) {
-        return enif_raise_exception(env, atom_no_prepared_statement);   
     }
 
     ERL_NIF_TERM column_types = enif_make_list(env, 0);
@@ -592,16 +568,8 @@ esqlite_bind_int(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
     int index;
     int value;
 
-    if(argc != 3) {
-        return enif_make_badarg(env);
-    }
-
     if(!enif_get_resource(env, argv[0], esqlite3_stmt_type, (void **) &stmt)) {
         return enif_make_badarg(env);
-    }
-
-    if(!stmt->statement) {
-        return enif_raise_exception(env, atom_no_prepared_statement);   
     }
 
     if(!enif_get_int(env, argv[1], &index)) {
@@ -627,16 +595,8 @@ esqlite_bind_int64(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
     int index;
     ErlNifSInt64 value;
 
-    if(argc != 3) {
-        return enif_make_badarg(env);
-    }
-
     if(!enif_get_resource(env, argv[0], esqlite3_stmt_type, (void **) &stmt)) {
         return enif_make_badarg(env);
-    }
-
-    if(!stmt->statement) {
-        return enif_raise_exception(env, atom_no_prepared_statement);   
     }
 
     if(!enif_get_int(env, argv[1], &index)) {
@@ -662,16 +622,8 @@ esqlite_bind_double(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
     int index;
     double value;
 
-    if(argc != 3) {
-        return enif_make_badarg(env);
-    }
-
     if(!enif_get_resource(env, argv[0], esqlite3_stmt_type, (void **) &stmt)) {
         return enif_make_badarg(env);
-    }
-
-    if(!stmt->statement) {
-        return enif_raise_exception(env, atom_no_prepared_statement);   
     }
 
     if(!enif_get_int(env, argv[1], &index)) {
@@ -697,16 +649,8 @@ esqlite_bind_text(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
     int index;
     ErlNifBinary text;
 
-    if(argc != 3) {
-        return enif_make_badarg(env);
-    }
-
     if(!enif_get_resource(env, argv[0], esqlite3_stmt_type, (void **) &stmt)) {
         return enif_make_badarg(env);
-    }
-
-    if(!stmt->statement) {
-        return enif_raise_exception(env, atom_no_prepared_statement);   
     }
 
     if(!enif_get_int(env, argv[1], &index)) {
@@ -740,16 +684,8 @@ esqlite_bind_blob(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
     int index;
     ErlNifBinary blob;
 
-    if(argc != 3) {
-        return enif_make_badarg(env);
-    }
-
     if(!enif_get_resource(env, argv[0], esqlite3_stmt_type, (void **) &stmt)) {
         return enif_make_badarg(env);
-    }
-
-    if(!stmt->statement) {
-        return enif_raise_exception(env, atom_no_prepared_statement);   
     }
 
     if(!enif_get_int(env, argv[1], &index)) {
@@ -774,16 +710,8 @@ esqlite_bind_null(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
     esqlite3_stmt *stmt;
     int index;
 
-    if(argc != 2) {
-        return enif_make_badarg(env);
-    }
-
     if(!enif_get_resource(env, argv[0], esqlite3_stmt_type, (void **) &stmt)) {
         return enif_make_badarg(env);
-    }
-
-    if(!stmt->statement) {
-        return enif_raise_exception(env, atom_no_prepared_statement);   
     }
 
     if(!enif_get_int(env, argv[1], &index)) {
@@ -806,16 +734,8 @@ esqlite_bind_parameter_index(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]
     int index;
     ERL_NIF_TERM eos = enif_make_int(env, 0);
 
-    if(argc != 2) {
-        return enif_make_badarg(env);
-    }
-
     if(!enif_get_resource(env, argv[0], esqlite3_stmt_type, (void **) &stmt)) {
         return enif_make_badarg(env);
-    }
-
-    if(!stmt->statement) {
-        return enif_raise_exception(env, atom_no_prepared_statement);   
     }
 
     if(!enif_inspect_iolist_as_binary(env, enif_make_list2(env, argv[1], eos), &bin)) {
@@ -835,16 +755,8 @@ esqlite_step(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
 {
     esqlite3_stmt *stmt;
 
-    if(argc != 1) {
-        return enif_make_badarg(env);
-    }
-
     if(!enif_get_resource(env, argv[0], esqlite3_stmt_type, (void **) &stmt)) {
         return enif_make_badarg(env);
-    }
-
-    if(!stmt->statement) {
-        return enif_raise_exception(env, atom_no_prepared_statement);   
     }
 
     int rc = sqlite3_step(stmt->statement);
@@ -878,16 +790,8 @@ esqlite_reset(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
 {
     esqlite3_stmt *stmt;
 
-    if(argc != 1) {
-        return enif_make_badarg(env);
-    }
-
     if(!enif_get_resource(env, argv[0], esqlite3_stmt_type, (void **) &stmt)) {
         return enif_make_badarg(env);
-    }
-
-    if(!stmt->statement) {
-        return enif_raise_exception(env, atom_no_prepared_statement);   
     }
 
     int rc = sqlite3_reset(stmt->statement);
@@ -911,10 +815,6 @@ esqlite_backup_init(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
     esqlite3 *source;
     ErlNifBinary source_name;
     ERL_NIF_TERM eos = enif_make_int(env, 0);
-
-    if(argc != 4) {
-        return enif_make_badarg(env);
-    }
 
     if(!enif_get_resource(env, argv[0], esqlite3_type, (void **) &destination)) {
         return enif_make_badarg(env);
@@ -968,10 +868,6 @@ esqlite_backup_remaining(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
 {
     esqlite3_backup *backup;
 
-    if(argc != 1) {
-        return enif_make_badarg(env);
-    }
-
     if(!enif_get_resource(env, argv[0], esqlite3_backup_type, (void **) &backup)) {
         return enif_make_badarg(env);
     }
@@ -989,10 +885,6 @@ esqlite_backup_pagecount(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
 {
     esqlite3_backup *backup;
 
-    if(argc != 1) {
-        return enif_make_badarg(env);
-    }
-
     if(!enif_get_resource(env, argv[0], esqlite3_backup_type, (void **) &backup)) {
         return enif_make_badarg(env);
     }
@@ -1007,10 +899,6 @@ esqlite_backup_step(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
 {
     esqlite3_backup *backup;
     int n_page;
-
-    if(argc != 2) {
-        return enif_make_badarg(env);
-    }
 
     if(!enif_get_resource(env, argv[0], esqlite3_backup_type, (void **) &backup)) {
         return enif_make_badarg(env);
@@ -1039,10 +927,6 @@ static ERL_NIF_TERM
 esqlite_backup_finish(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
 {
     esqlite3_backup *backup;
-
-    if(argc != 1) {
-        return enif_make_badarg(env);
-    }
 
     if(!enif_get_resource(env, argv[0], esqlite3_backup_type, (void **) &backup)) {
         return enif_make_badarg(env);
@@ -1079,9 +963,6 @@ esqlite_interrupt(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
 {
     esqlite3 *conn;
 
-    if(argc != 1)
-        return enif_make_badarg(env);
-
     if(!enif_get_resource(env, argv[0], esqlite3_type, (void **) &conn))
         return enif_make_badarg(env);
 
@@ -1098,9 +979,6 @@ static ERL_NIF_TERM
 esqlite_get_autocommit(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
 {
     esqlite3 *conn;
-
-    if(argc != 1)
-        return enif_make_badarg(env);
 
     if(!enif_get_resource(env, argv[0], esqlite3_type, (void **) &conn))
         return enif_make_badarg(env);
@@ -1123,9 +1001,6 @@ esqlite_last_insert_rowid(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
 {
     esqlite3 *conn;
 
-    if(argc != 1)
-        return enif_make_badarg(env);
-
     if(!enif_get_resource(env, argv[0], esqlite3_type, (void **) &conn))
         return enif_make_badarg(env);
 
@@ -1144,9 +1019,6 @@ esqlite_changes(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
 {
     esqlite3 *conn;
 
-    if(argc != 1)
-        return enif_make_badarg(env);
-
     if(!enif_get_resource(env, argv[0], esqlite3_type, (void **) &conn))
         return enif_make_badarg(env);
 
@@ -1164,9 +1036,6 @@ static ERL_NIF_TERM
 esqlite_memory_stats(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
 {
     int highwater_reset_flag = 0;
-
-    if(argc != 1)
-        return enif_make_badarg(env);
 
     if(!enif_get_int(env, argv[0], &highwater_reset_flag)) {
         return enif_make_badarg(env);
@@ -1187,9 +1056,6 @@ esqlite_status(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
 {
     int op = 0;
     int highwater_reset_flag = 0;
-
-    if(argc != 2)
-        return enif_make_badarg(env);
 
     if(!enif_get_int(env, argv[0], &op)) {
         return enif_make_badarg(env);
