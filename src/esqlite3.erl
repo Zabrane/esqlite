@@ -57,12 +57,18 @@
     backup_step/2,
     backup_finish/1,
 
+    bind0/2,
     bind/2,
+
     q/2, q/3,
     fetchall/1,
 
     status/0, status/1, status/2
 ]).
+
+-compile(inline).
+-compile({inline_size, 512}).
+-compile({inline, [ bind0/2 ]}).
 
 -define(DEFAULT_TIMEOUT, infinity).
 -define(DEFAULT_CHUNK_SIZE, 5000).
@@ -291,6 +297,15 @@ prepare(#esqlite3{db=Connection}, Sql, PrepareFlags) ->
         {error, _}=Error ->
             Error
     end.
+
+%% @doc Bind an array of values as parameters of a prepared statement
+-spec bind0(Statement, Args) -> Result when
+      Statement :: esqlite3_stmt(),
+      Args :: list(),
+      Result :: ok | {error, _}.
+%% Anonymous parameters
+bind0(Statement = #esqlite3_stmt{}, Args) ->
+    bind1(Statement, 1, Args).
 
 %% @doc Bind an array of values as parameters of a prepared statement
 -spec bind(Statement, Args) -> Result when
