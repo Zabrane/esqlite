@@ -298,8 +298,6 @@ prepare(#esqlite3{db=Connection}, Sql, PrepareFlags) ->
       Args :: list() | map(),
       Result :: ok | {error, _}.
 %% Named parameters
-bind(#esqlite3_stmt{}=Statement, Args) when is_map(Args) ->
-    bind(Statement, maps:to_list(Args));
 bind(#esqlite3_stmt{}=Statement, [{_Type, _ParameterName, _Value} | _] = Args) ->
     bind2(Statement, Args);
 bind(#esqlite3_stmt{}=Statement, [{ParameterName, _Value} | _] = Args)
@@ -307,20 +305,20 @@ bind(#esqlite3_stmt{}=Statement, [{ParameterName, _Value} | _] = Args)
     bind2(Statement, Args);
 %% Anonymous parameters
 bind(#esqlite3_stmt{}=Statement, Args) when is_list(Args) ->
-    bind1(Statement, 1, Args).
+    bind1(Statement, 1, Args);
+bind(#esqlite3_stmt{}=Statement, Args) when is_map(Args) ->
+    bind(Statement, maps:to_list(Args)).
 
-bind1(_Statement, _Column, []) ->
-    ok;
 bind1(Statement, Column, [Arg | Args]) ->
     case bind_arg(Statement, Column, Arg) of
         ok ->
             bind1(Statement, Column + 1, Args);
         {error, _}=Error ->
             Error
-    end.
+    end;
+bind1(_Statement, _Column, []) ->
+    ok.
 
-bind2(_Statement, []) ->
-    ok;
 bind2(#esqlite3_stmt{stmt=Stmt}=Statement, [{Type, ParameterName, Value} | Args]) ->
     case esqlite3_nif:bind_parameter_index(Stmt, ParameterName) of
         {ok, Column} ->
@@ -344,7 +342,9 @@ bind2(#esqlite3_stmt{stmt=Stmt}=Statement, [{ParameterName, Value} | Args]) ->
             end;
         error ->
             {error, named_parameter_not_found}
-    end.
+    end;
+bind2(_Statement, []) ->
+    ok.
 
 % Bind with automatic tyoe conversion
 bind_arg(Statement, Column, undefined) ->
